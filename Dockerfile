@@ -46,7 +46,7 @@ RUN \
   cd ${LS_HOME}; \
   jruby_version=$(cat .ruby-version | sed -e 's/^jruby-//'); \
   tarball="/tmp/jruby-dist-${jruby_version}-bin.tar.gz"; \
-  curl -o "${tarball}" \
+  curl -s -o "${tarball}" \
       https://repo1.maven.org/maven2/org/jruby/jruby-dist/${jruby_version}/jruby-dist-${jruby_version}-bin.tar.gz;
 
 COPY CHECKSUMS-jruby /tmp
