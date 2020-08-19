@@ -1,8 +1,9 @@
 FROM centos:7
 
 RUN \
-  yum install -y \
-    git \
+  yum install -y centos-release-scl.noarch \
+  && yum install -y \
+    rh-git218-git.x86_64 \
     java-1.8.0-openjdk-devel.x86_64 \
     which \
     patch make \
@@ -13,8 +14,27 @@ RUN groupadd --gid 1000 builder && \
       --home-dir /src --create-home \
       builder
 
-# Ensure Logstash gets a UTF-8 locale by default.
-ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
+RUN  install -d -o builder -g builder -m 0775 /src \
+  && install -d -o builder -g builder -m 0775 /opt/jruby
+
+# Visual Studio Code prefers git >= 2.18
+# We've installed it from SCL with yum above; just need do
+# make that permanent so we don't go crazy prefixing
+# everything with 'scl enable rh-git218 -- '
+#
+# However, you only get the effect of this in a shell, and
+# NOT inside a RUN command, which is a bit vexing...
+# and there's no sane way around that, so we just duplicate
+# what that enable script does with a bunch of ENVs
+#
+RUN cat /opt/rh/rh-git218/enable > /etc/profile.d/git-version.sh
+#
+ENV PATH=/opt/rh/rh-git218/root/usr/bin:${PATH}
+ENV MANPATH=/opt/rh/rh-git218/root/usr/share/man:${MANPATH}
+ENV PERL5LIB=/opt/rh/rh-git218/root/usr/share/perl5/vendor_perl:${PERL5LIB}
+ENV LD_LIBRARY_PATH=/opt/rh/httpd24/root/usr/lib64:${LD_LIBRARY_PATH}
+#
+RUN git --version
 
 # Note: While the official logstash Docker container runs logstash in Java 11,
 # the plugin eco-system is still built with Java 8, because Java 8 is still
@@ -24,6 +44,9 @@ ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
 
 USER builder
 WORKDIR /src
+
+# Ensure Logstash gets a UTF-8 locale by default.
+ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
 
 RUN git clone --branch 7.8 --single-branch https://github.com/elastic/logstash.git
 
@@ -66,24 +89,27 @@ RUN \
 # At this point, we need to have the plugin code point to the logstash-core jar that
 # was just produced.
 
-USER root
-
 RUN \
   mkdir -p /opt/jruby; \
   jruby_version=$(cat ${LS_HOME}/.ruby-version | sed -e 's/^jruby-//'); \
   tar -C /opt/jruby -zxf /tmp/jruby-dist-${jruby_version}-bin.tar.gz --strip-components=1 --no-same-owner;
 
-ENV PATH=/opt/jruby/bin:${PATH}
+# NOTE: I've found (same as https://github.com/elastic/logstash-devutils/issues/68)
+# that if logstash/bin is in the PATH before jruby/bin, then you'll get problems
+# resolving dependencies (notably logstash-devutils). But if jruby/bin is in the
+# PATH before logstash/bin, then it works.
+#
+ENV PATH=/src/logstash/bin/:/opt/jruby/bin:${PATH}
 
 RUN jruby --version
 
-RUN gem install bundler
+RUN gem install bundler rake
 
 # Now that we have 'rake' available, we need to bootstrap the logstash source
 # to provide ... jruby (a vendored version of it) and more besides.
 
-USER builder
-
 RUN cd ${LS_HOME}; rake bootstrap
+
+WORKDIR /work
 
 ENTRYPOINT ["/bin/bash"]
