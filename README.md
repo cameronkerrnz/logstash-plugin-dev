@@ -5,10 +5,8 @@ Logstash plugin development container for (J)Ruby or Java plugins
 
 Docker Hub: cameronkerrnz/logstash-plugin-dev
 
-Build status: TODO
-
-Test status: TODO
-
+![Docker Cloud Automated build](https://img.shields.io/docker/cloud/automated/cameronkerrnz/logstash-plugin-dev)
+![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/cameronkerrnz/logstash-plugin-dev)
 ![Docker Pulls](https://img.shields.io/docker/pulls/cameronkerrnz/logstash-plugin-dev)
 
 ---
