@@ -9,6 +9,8 @@ Build status: TODO
 
 Test status: TODO
 
+![Docker Pulls](https://img.shields.io/docker/pulls/cameronkerrnz/logstash-plugin-dev)
+
 ---
 
 Developing a Logstash plugin is something that provides a lot of value,
