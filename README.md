@@ -69,7 +69,8 @@ Let's say you want to create a new filter plugin called `logstash-filter-coolstu
 
 When the container starts, you will have a shell; you can run logstash-plugin from there:
 
-    logstash-plugin generate --type filter --name coolstuff
+    cd /work
+    /src/logstash/bin/logstash-plugin generate --type filter --name coolstuff
 
 Now you can exit that container.
 
@@ -99,7 +100,7 @@ In the bottom-left corner there is a green icon that looks a bit like '><'. Clic
 
 Remote-Containers: Add Development Container Configuration Files...
 
-Until such time as logstash-plugin-dev gets adopted into the official Dev-Containers repository, use 'Existing Dockerfile'. You'll find the following will be created in the root of your repository.
+As this isn't an official Dev-Containers repository, use 'Existing Dockerfile', which you'll find if you 'Show all'. You'll find the following will be created in the root of your repository.
 
     .devcontainer/
         devcontainer.json
@@ -141,11 +142,17 @@ If you use the `mount` command, you'll see that your repository has been mounted
 
 ## Ruby plugins
 
-Generally this is something like the following:
+The first time you build, you will need to have done some initial setup:
 
-    rake vendor
+- edit the *.gemspec file; you'll need to edit the bits with TODO
+
+To build, you will generally do the following:
+
+    rake vendor   # if you have things in vendor.json
     bundle install
     bundle exec rspec
+
+LoadError: no such file to load -- logstash/devutils/rake
 
 ## Java plugins
 
