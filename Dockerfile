@@ -133,6 +133,20 @@ RUN cd ${LS_HOME}; rake bootstrap
 
 RUN cd ${LS_HOME}; rake plugin:install-default
 
+# When we compile a new plugin, we invoke 'bundle install' and it will go away
+# and pull down yet more stuff from the internet; which sucks if you're offline.
+# So let's generate a simple filter plugin with the minimal bits it needs,
+# compile it and test it to ensure that it works.
+
+RUN logstash-plugin generate --type=filter --name=buildtest --path=/src/
+COPY logstash-filter-buildtest/logstash-filter-buildtest.gemspec \
+    /src/logstash-filter-buildtest/logstash-filter-buildtest.gemspec
+RUN cd /src/logstash-filter-buildtest && bundle install
+RUN cd /src/logstash-filter-buildtest && bundle exec rspec
+
+# TODO: Should build a Java plugin too...
+
+# Support the use of 'Drip' to make dealing with long startup times more pleasant.
 WORKDIR /work
 
 ENTRYPOINT ["/bin/bash"]
