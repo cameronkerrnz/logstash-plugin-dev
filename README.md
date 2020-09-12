@@ -149,10 +149,9 @@ The first time you build, you will need to have done some initial setup:
 To build, you will generally do the following:
 
     rake vendor   # if you have things in vendor.json
-    bundle install
-    bundle exec rspec
-
-LoadError: no such file to load -- logstash/devutils/rake
+    bundle install # installs plugin dependencies
+    bundle exec rspec # run the tests... although we haven't built a gem yet
+    gem build logstash-filter-coolstuff.gemspec
 
 ## Java plugins
 
