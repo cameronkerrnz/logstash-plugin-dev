@@ -147,6 +147,25 @@ RUN cd /src/logstash-filter-buildtest && bundle exec rspec
 # TODO: Should build a Java plugin too...
 
 # Support the use of 'Drip' to make dealing with long startup times more pleasant.
+# This will really help with running tests quickly and often.
+# Drip works by keeping another JVM ready in the background, with the same classpath
+# and startup options, ready to go. It's been around for years now, and the master
+# branch was last updated a few years ago, which is rather newer than the last release.
+#
+# Keep an occassional eye on https://github.com/ninjudd/drip/network to see if this
+# moves to somewhere else.
+#
+# You'll need to set JAVACMD=`which drip` for this to be used... I don't see much
+# difference (if any) though, so not sure if that's working as it should.
+# Also, the checksum is not so useful; it downloads other things too.
+#
+RUN mkdir -p ~/bin/ && \
+    rm -f ~/bin/drip && \
+    curl -sL https://raw.githubusercontent.com/ninjudd/drip/master/bin/drip > ~/bin/drip && \
+    sha256sum ~/bin/drip | tee /dev/stderr | grep -q acffc2af7385af993949d2fc406c456d1edf1a542fb72d2f2c7758251226c89c && \
+    chmod +x ~/bin/drip && \
+    echo "Drip downloaded and matches expected checksum"
+
 WORKDIR /work
 
 ENTRYPOINT ["/bin/bash"]
