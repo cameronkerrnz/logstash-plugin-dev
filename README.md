@@ -65,14 +65,8 @@ You will want to run `logstash-plugin` from within the container, but bind-mount
 
 Let's say you want to create a new filter plugin called `logstash-filter-coolstuff` in your current directory. We shall create a new plugin in a directory `logstash-filter-coolstuff` and then we'll initialise that as a Git repository and add the little bit of magic for a dev container.
 
-    docker run --rm -it -v ${PWD}:/work cameronkerrnz/logstash-plugin-dev:latest
-
-When the container starts, you will have a shell; you can run logstash-plugin from there:
-
-    cd /work
-    /src/logstash/bin/logstash-plugin generate --type filter --name coolstuff
-
-Now you can exit that container.
+    docker run --rm -it -v ${PWD}:/work cameronkerrnz/logstash-plugin-dev:7.9
+       -c "logstash-plugin generate --type=filter --name=coolstuff --path=/work/"
 
 Initialise the logstash-filter-coolstuff directory as a Git repo; this is important for Dev Containers to work it seems.
 
@@ -126,11 +120,7 @@ We've referenced a Dockerfile, but we don't have one yet. We could write a big l
 
 Create a file called `Dockerfile` with the following content. You can add to this whatever you like.
 
-    FROM cameronkerrnz/logstash-plugin-dev:latest
-
-(Later on, this should really be something like)
-
-    FROM cameronkerrnz/logstash-plugin-dev:7.8
+    FROM cameronkerrnz/logstash-plugin-dev:7.9
 
 When you are done, use the 'Remote-Containers: Reopen in Container' command from the command-palette, or the green '><' icon at the bottom-left.
 
@@ -152,6 +142,18 @@ To build, you will generally do the following:
     bundle install # installs plugin dependencies
     bundle exec rspec # run the tests... although we haven't built a gem yet
     gem build logstash-filter-coolstuff.gemspec
+
+### Using Drip
+
+You can use Drip to reduce the time it takes to re-run Java processes. Drip is a drop-in replacement for Java that will keep (the next) JVM precreated. In theory, it should be
+very useful for rerunning tests quickly.
+
+Biggest limitation (assuming it works, which I'm not at all sure about because things
+aren't faster for me yet), is that it doesn't support stdin.
+
+    export JAVACMD=`which drip`
+
+You can use the commands `drip ps` and `drip kill`, or just `drip` for brief help.
 
 ## Java plugins
 

@@ -113,7 +113,10 @@ RUN \
 # resolving dependencies (notably logstash-devutils). But if jruby/bin is in the
 # PATH before logstash/bin, then it works.
 #
-ENV PATH=/src/logstash/bin/:/opt/jruby/bin:${PATH}
+#ENV PATH=/src/logstash/bin/:/opt/jruby/bin:${PATH}
+# Actually, that might be wrong; had issues with belzebuth dependencies (and then
+# more)
+ENV PATH=/opt/jruby/bin:/src/logstash/bin:/src/bin:${PATH}
 
 RUN jruby --version
 
@@ -125,10 +128,43 @@ RUN gem install bundler rake
 RUN cd ${LS_HOME}; rake bootstrap
 
 # It would be useful to have the usual plugins available, as
-# you don't them by default; they take ages to install too,
+# they are not installed by default; they take ages to install too,
 # for some reason.
 
 RUN cd ${LS_HOME}; rake plugin:install-default
+
+# When we compile a new plugin, we invoke 'bundle install' and it will go away
+# and pull down yet more stuff from the internet; which sucks if you're offline.
+# So let's generate a simple filter plugin with the minimal bits it needs,
+# compile it and test it to ensure that it works.
+
+RUN logstash-plugin generate --type=filter --name=buildtest --path=/src/
+COPY logstash-filter-buildtest/logstash-filter-buildtest.gemspec \
+    /src/logstash-filter-buildtest/logstash-filter-buildtest.gemspec
+RUN cd /src/logstash-filter-buildtest && bundle install
+RUN cd /src/logstash-filter-buildtest && bundle exec rspec
+
+# TODO: Should build a Java plugin too...
+
+# Support the use of 'Drip' to make dealing with long startup times more pleasant.
+# This will really help with running tests quickly and often.
+# Drip works by keeping another JVM ready in the background, with the same classpath
+# and startup options, ready to go. It's been around for years now, and the master
+# branch was last updated a few years ago, which is rather newer than the last release.
+#
+# Keep an occassional eye on https://github.com/ninjudd/drip/network to see if this
+# moves to somewhere else.
+#
+# You'll need to set JAVACMD=`which drip` for this to be used... I don't see much
+# difference (if any) though, so not sure if that's working as it should.
+# Also, the checksum is not so useful; it downloads other things too.
+#
+RUN mkdir -p ~/bin/ && \
+    rm -f ~/bin/drip && \
+    curl -sL https://raw.githubusercontent.com/ninjudd/drip/master/bin/drip > ~/bin/drip && \
+    sha256sum ~/bin/drip | tee /dev/stderr | grep -q acffc2af7385af993949d2fc406c456d1edf1a542fb72d2f2c7758251226c89c && \
+    chmod +x ~/bin/drip && \
+    echo "Drip downloaded and matches expected checksum"
 
 WORKDIR /work
 
