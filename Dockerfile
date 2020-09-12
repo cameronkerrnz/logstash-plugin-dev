@@ -113,7 +113,10 @@ RUN \
 # resolving dependencies (notably logstash-devutils). But if jruby/bin is in the
 # PATH before logstash/bin, then it works.
 #
-ENV PATH=/src/logstash/bin/:/opt/jruby/bin:${PATH}
+#ENV PATH=/src/logstash/bin/:/opt/jruby/bin:${PATH}
+# Actually, that might be wrong; had issues with belzebuth dependencies (and then
+# more)
+ENV PATH=/opt/jruby/bin:/src/logstash/bin:/src/bin:${PATH}
 
 RUN jruby --version
 
