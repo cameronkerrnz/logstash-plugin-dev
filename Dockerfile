@@ -128,7 +128,7 @@ RUN gem install bundler rake
 RUN cd ${LS_HOME}; rake bootstrap
 
 # It would be useful to have the usual plugins available, as
-# you don't them by default; they take ages to install too,
+# they are not installed by default; they take ages to install too,
 # for some reason.
 
 RUN cd ${LS_HOME}; rake plugin:install-default
