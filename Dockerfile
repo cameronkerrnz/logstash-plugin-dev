@@ -7,6 +7,7 @@ RUN \
     java-1.8.0-openjdk-devel.x86_64 \
     which \
     patch make \
+    gcc \
   && yum clean all
 
 RUN groupadd --gid 1000 builder && \
