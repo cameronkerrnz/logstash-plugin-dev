@@ -48,9 +48,23 @@ WORKDIR /src
 # Ensure Logstash gets a UTF-8 locale by default.
 ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
 
-RUN git clone --branch 7.8 --single-branch https://github.com/elastic/logstash.git
-
 ENV LS_HOME=/src/logstash
+
+# Build logstash for the Open Source version; shouldn't
+# affect plugins.
+#
+ENV OSS=true
+
+# This was in the master branch, but not the 7.9 branch...
+ENV LOGSTASH_SOURCE=1
+ENV LOGSTASH_PATH=${LS_HOME}
+
+# Get logstash and assemble its Java bits
+# We do this before installing JRuby, because
+# the Logstash source tells us which version
+# of JRuby it wants.
+
+RUN git clone --branch 7.9 --single-branch https://github.com/elastic/logstash.git
 
 RUN cd ${LS_HOME} && ./gradlew assemble
 
@@ -109,6 +123,12 @@ RUN gem install bundler rake
 # to provide ... jruby (a vendored version of it) and more besides.
 
 RUN cd ${LS_HOME}; rake bootstrap
+
+# It would be useful to have the usual plugins available, as
+# you don't them by default; they take ages to install too,
+# for some reason.
+
+RUN cd ${LS_HOME}; rake plugin:install-default
 
 WORKDIR /work
 
