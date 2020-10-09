@@ -138,9 +138,9 @@ The first time you build, you will need to have done some initial setup:
 
 To build, you will generally do the following:
 
-    rake vendor   # if you have things in vendor.json
-    bundle install # installs plugin dependencies
-    bundle exec rspec # run the tests... although we haven't built a gem yet
+    rake vendor         # if you have things in vendor.json
+    bundle install      # installs plugin dependencies
+    bundle exec rspec   # run the tests... no gem required
     gem build logstash-filter-coolstuff.gemspec
 
 ### Using Drip
@@ -155,10 +155,16 @@ aren't faster for me yet), is that it doesn't support stdin.
 
 You can use the commands `drip ps` and `drip kill`, or just `drip` for brief help.
 
+NOTE: Using stdin is particularly useful when doing QA testing, because its easiest mechanism by which to get Logstash to shutdown after consuming the input.
+
 ## Java plugins
 
-    (wip)
+This is deliciously simple, and should be as simple as:
+
+    ./gradlew assemble # necessary?
+    ./gradlew test     # run unit-tests
+    ./gradlew gem
 
 # TODO: Running in a debugger
 
-(this could be awesome)
+(this could be awesome, but I'm not familiar enough with Ruby at this stage.)
