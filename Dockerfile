@@ -1,13 +1,20 @@
 FROM centos:7
 
+# If using Java 11, then you need to have JRuby 9.2, otherwise
+# you'll end up with version detection error when starting jruby
+# and it will try to load some things (eg. ScriptEngine) for
+# Java 7, which will not work.
+
 RUN \
   yum install -y centos-release-scl.noarch \
   && yum install -y \
     rh-git218-git.x86_64 \
-    java-1.8.0-openjdk-devel.x86_64 \
+    java-11-openjdk-devel.x86_64 \
+    jq \
     which \
     patch make \
     gcc \
+    yq \
   && yum clean all
 
 RUN groupadd --gid 1000 builder && \
@@ -65,7 +72,7 @@ ENV LOGSTASH_PATH=${LS_HOME}
 # the Logstash source tells us which version
 # of JRuby it wants.
 
-RUN git clone --branch 7.9 --single-branch https://github.com/elastic/logstash.git
+RUN git clone --branch 7.13 --single-branch https://github.com/elastic/logstash.git
 
 RUN cd ${LS_HOME} && ./gradlew assemble
 
@@ -79,10 +86,16 @@ RUN cd ${LS_HOME} && ./gradlew assemble
 #
 # https://www.jruby.org/download
 
+# The logstash documentation in the repo still says that 'ruby' should output
+# the same version as shown in .ruby-version, but I think this is out of date
+# and it should perhaps match what is used in versions.yml; release notes for
+# 7.13 certainly say JRuby 9.2.16.0 and Java 11
+
+ARG jruby_version=9.2.16.0
+
 RUN \
   set -x; set -u; set -e; \
   cd ${LS_HOME}; \
-  jruby_version=$(cat .ruby-version | sed -e 's/^jruby-//'); \
   tarball="/tmp/jruby-dist-${jruby_version}-bin.tar.gz"; \
   curl -s -o "${tarball}" \
       https://repo1.maven.org/maven2/org/jruby/jruby-dist/${jruby_version}/jruby-dist-${jruby_version}-bin.tar.gz;
@@ -97,7 +110,6 @@ COPY CHECKSUMS-jruby /tmp
 RUN \
   set -x; set -u; set -e; \
   cd ${LS_HOME}; \
-  jruby_version=$(cat .ruby-version | sed -e 's/^jruby-//'); \
   cd /tmp; \
   awk -v f="jruby-dist-${jruby_version}-bin.tar.gz" '$2 == f' < CHECKSUMS-jruby | tee /dev/stderr | sha1sum -c -
 
@@ -106,7 +118,6 @@ RUN \
 
 RUN \
   mkdir -p /opt/jruby; \
-  jruby_version=$(cat ${LS_HOME}/.ruby-version | sed -e 's/^jruby-//'); \
   tar -C /opt/jruby -zxf /tmp/jruby-dist-${jruby_version}-bin.tar.gz --strip-components=1 --no-same-owner;
 
 # NOTE: I've found (same as https://github.com/elastic/logstash-devutils/issues/68)
@@ -126,6 +137,8 @@ RUN gem install bundler rake
 # Now that we have 'rake' available, we need to bootstrap the logstash source
 # to provide ... jruby (a vendored version of it) and more besides.
 
+RUN cd ${LS_HOME}; cp Gemfile.jruby-2.5.lock.release Gemfile.lock
+
 RUN cd ${LS_HOME}; rake bootstrap
 
 # It would be useful to have the usual plugins available, as
@@ -142,6 +155,8 @@ RUN cd ${LS_HOME}; rake plugin:install-default
 RUN logstash-plugin generate --type=filter --name=buildtest --path=/src/
 COPY logstash-filter-buildtest/logstash-filter-buildtest.gemspec \
     /src/logstash-filter-buildtest/logstash-filter-buildtest.gemspec
+COPY logstash-filter-buildtest/Gemfile \
+    /src/logstash-filter-buildtest/Gemfile
 RUN cd /src/logstash-filter-buildtest && bundle install
 RUN cd /src/logstash-filter-buildtest && bundle exec rspec
 
