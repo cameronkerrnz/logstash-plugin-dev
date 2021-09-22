@@ -65,7 +65,7 @@ You will want to run `logstash-plugin` from within the container, but bind-mount
 
 Let's say you want to create a new filter plugin called `logstash-filter-coolstuff` in your current directory. We shall create a new plugin in a directory `logstash-filter-coolstuff` and then we'll initialise that as a Git repository and add the little bit of magic for a dev container.
 
-    docker run --rm -it -v ${PWD}:/work cameronkerrnz/logstash-plugin-dev:7.9
+    docker run --rm -it -v ${PWD}:/work cameronkerrnz/logstash-plugin-dev:7.13
        -c "logstash-plugin generate --type=filter --name=coolstuff --path=/work/"
 
 Initialise the logstash-filter-coolstuff directory as a Git repo; this is important for Dev Containers to work it seems.
@@ -120,7 +120,7 @@ We've referenced a Dockerfile, but we don't have one yet. We could write a big l
 
 Create a file called `Dockerfile` with the following content. You can add to this whatever you like.
 
-    FROM cameronkerrnz/logstash-plugin-dev:7.9
+    FROM cameronkerrnz/logstash-plugin-dev:7.13
 
 When you are done, use the 'Remote-Containers: Reopen in Container' command from the command-palette, or the green '><' icon at the bottom-left.
 
