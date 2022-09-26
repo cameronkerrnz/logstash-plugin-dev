@@ -8,8 +8,8 @@ FROM centos:7
 RUN \
   yum install -y centos-release-scl.noarch \
   && yum install -y \
-    rh-git218-git.x86_64 \
-    java-11-openjdk-devel.x86_64 \
+    rh-git218-git \
+    java-11-openjdk-devel \
     jq \
     which \
     patch make \
