@@ -8,7 +8,7 @@ FROM centos:7
 RUN \
   yum install -y centos-release-scl.noarch \
   && yum install -y \
-    rh-git218-git \
+    rh-git227-git \
     java-11-openjdk-devel \
     jq \
     which \
@@ -30,21 +30,21 @@ RUN groupadd --gid 1000 builder && \
 RUN  install -d -o builder -g builder -m 0775 /src \
   && install -d -o builder -g builder -m 0775 /opt/jruby
 
-# Visual Studio Code prefers git >= 2.18
+# Visual Studio Code prefers git >= 2.27
 # We've installed it from SCL with yum above; just need do
 # make that permanent so we don't go crazy prefixing
-# everything with 'scl enable rh-git218 -- '
+# everything with 'scl enable rh-git227 -- '
 #
 # However, you only get the effect of this in a shell, and
 # NOT inside a RUN command, which is a bit vexing...
 # and there's no sane way around that, so we just duplicate
 # what that enable script does with a bunch of ENVs
 #
-RUN cat /opt/rh/rh-git218/enable > /etc/profile.d/git-version.sh
+RUN cat /opt/rh/rh-git227/enable > /etc/profile.d/git-version.sh
 #
-ENV PATH=/opt/rh/rh-git218/root/usr/bin:${PATH}
-ENV MANPATH=/opt/rh/rh-git218/root/usr/share/man:${MANPATH}
-ENV PERL5LIB=/opt/rh/rh-git218/root/usr/share/perl5/vendor_perl:${PERL5LIB}
+ENV PATH=/opt/rh/rh-git227/root/usr/bin:${PATH}
+ENV MANPATH=/opt/rh/rh-git227/root/usr/share/man:${MANPATH}
+ENV PERL5LIB=/opt/rh/rh-git227/root/usr/share/perl5/vendor_perl:${PERL5LIB}
 ENV LD_LIBRARY_PATH=/opt/rh/httpd24/root/usr/lib64:${LD_LIBRARY_PATH}
 #
 RUN git --version
