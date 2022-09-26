@@ -17,6 +17,11 @@ RUN \
     yq \
   && yum clean all
 
+# Ensure Logstash gets a UTF-8 locale by default.
+ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
+
+RUN localedef -i en_US -c -f UTF-8 en_US.UTF-8
+
 RUN groupadd --gid 1000 builder && \
     adduser --uid 1000 --gid 1000 \
       --home-dir /src --create-home \
@@ -52,9 +57,6 @@ RUN git --version
 
 USER builder
 WORKDIR /src
-
-# Ensure Logstash gets a UTF-8 locale by default.
-ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
 
 ENV LS_HOME=/src/logstash
 
