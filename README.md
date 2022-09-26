@@ -168,3 +168,11 @@ This is deliciously simple, and should be as simple as:
 # TODO: Running in a debugger
 
 (this could be awesome, but I'm not familiar enough with Ruby at this stage.)
+
+# Building this container image
+
+You can build this locally if you prefer:
+
+```
+docker build --progress=plain -t logstash-plugin-dev:7.13 .
+```
