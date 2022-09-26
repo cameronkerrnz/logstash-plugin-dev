@@ -15,6 +15,11 @@ RUN groupadd --gid 1000 builder && \
       --home-dir /src --create-home \
       builder
 
+# Ensure Logstash gets a UTF-8 locale by default.
+ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
+
+RUN localedef -i en_US -c -f UTF-8 en_US.UTF-8
+
 RUN  install -d -o builder -g builder -m 0775 /src \
   && install -d -o builder -g builder -m 0775 /opt/jruby
 
@@ -45,9 +50,6 @@ RUN git --version
 
 USER builder
 WORKDIR /src
-
-# Ensure Logstash gets a UTF-8 locale by default.
-ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
 
 ENV LS_HOME=/src/logstash
 
