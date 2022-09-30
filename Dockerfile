@@ -1,21 +1,21 @@
-FROM centos:7
+# syntax = docker/dockerfile:1.2
 
-# If using Java 11, then you need to have JRuby 9.2, otherwise
-# you'll end up with version detection error when starting jruby
-# and it will try to load some things (eg. ScriptEngine) for
-# Java 7, which will not work.
+FROM --platform=$TARGETPLATFORM registry.access.redhat.com/ubi8/ubi:latest
 
 RUN \
-  yum install -y centos-release-scl.noarch \
-  && yum install -y \
-    rh-git218-git.x86_64 \
-    java-11-openjdk-devel.x86_64 \
-    jq \
-    which \
-    patch make \
+  yum install -y \
     gcc \
-    yq \
+    git \
+    glibc-langpack-en \
+    java-11-openjdk-devel \
+    jq \
+    make \
+    patch \
+    which \
   && yum clean all
+
+# Ensure Logstash gets a UTF-8 locale by default.
+ENV LANG='en_US.utf8' LC_ALL='en_US.utf8'
 
 RUN groupadd --gid 1000 builder && \
     adduser --uid 1000 --gid 1000 \
@@ -25,25 +25,6 @@ RUN groupadd --gid 1000 builder && \
 RUN  install -d -o builder -g builder -m 0775 /src \
   && install -d -o builder -g builder -m 0775 /opt/jruby
 
-# Visual Studio Code prefers git >= 2.18
-# We've installed it from SCL with yum above; just need do
-# make that permanent so we don't go crazy prefixing
-# everything with 'scl enable rh-git218 -- '
-#
-# However, you only get the effect of this in a shell, and
-# NOT inside a RUN command, which is a bit vexing...
-# and there's no sane way around that, so we just duplicate
-# what that enable script does with a bunch of ENVs
-#
-RUN cat /opt/rh/rh-git218/enable > /etc/profile.d/git-version.sh
-#
-ENV PATH=/opt/rh/rh-git218/root/usr/bin:${PATH}
-ENV MANPATH=/opt/rh/rh-git218/root/usr/share/man:${MANPATH}
-ENV PERL5LIB=/opt/rh/rh-git218/root/usr/share/perl5/vendor_perl:${PERL5LIB}
-ENV LD_LIBRARY_PATH=/opt/rh/httpd24/root/usr/lib64:${LD_LIBRARY_PATH}
-#
-RUN git --version
-
 # Note: While the official logstash Docker container runs logstash in Java 11,
 # the plugin eco-system is still built with Java 8, because Java 8 is still
 # supported. Indeed, you'll find a number of issues (mostly relating to
@@ -52,9 +33,6 @@ RUN git --version
 
 USER builder
 WORKDIR /src
-
-# Ensure Logstash gets a UTF-8 locale by default.
-ENV LANG='en_US.UTF-8' LC_ALL='en_US.UTF-8'
 
 ENV LS_HOME=/src/logstash
 
@@ -72,9 +50,15 @@ ENV LOGSTASH_PATH=${LS_HOME}
 # the Logstash source tells us which version
 # of JRuby it wants.
 
-RUN git clone --branch 7.13 --single-branch https://github.com/elastic/logstash.git
+RUN git clone --branch 7.17 --single-branch https://github.com/elastic/logstash.git
 
-RUN cd ${LS_HOME} && ./gradlew assemble
+# I had originally wanted this to be a --mount=type=cache, but gradlew complained that
+# it couldn't create an exclusive lock within there...
+#
+RUN --mount=type=cache,target=/src/.gradle,uid=1000,gid=1000 \
+  set -eu; \
+  cd ${LS_HOME}; \
+  ./gradlew assemble
 
 # For Ruby stuff, we want a copy of jruby that matches what Logstash uses for
 # whichever version we're building.
@@ -86,39 +70,29 @@ RUN cd ${LS_HOME} && ./gradlew assemble
 #
 # https://www.jruby.org/download
 
-# The logstash documentation in the repo still says that 'ruby' should output
-# the same version as shown in .ruby-version, but I think this is out of date
-# and it should perhaps match what is used in versions.yml; release notes for
-# 7.13 certainly say JRuby 9.2.16.0 and Java 11
+# If using Java 11, then you need to have JRuby 9.2, otherwise
+# you'll end up with version detection error when starting jruby
+# and it will try to load some things (eg. ScriptEngine) for
+# Java 7, which will not work.
 
-ARG jruby_version=9.2.16.0
+# See version.yml in the logstash repo
+#
+ARG jruby_version=9.2.20.1
 
-RUN \
-  set -x; set -u; set -e; \
-  cd ${LS_HOME}; \
-  tarball="/tmp/jruby-dist-${jruby_version}-bin.tar.gz"; \
-  curl -s -o "${tarball}" \
-      https://repo1.maven.org/maven2/org/jruby/jruby-dist/${jruby_version}/jruby-dist-${jruby_version}-bin.tar.gz;
-
+# See versions.yml in the logstash repo
+#
 COPY CHECKSUMS-jruby /tmp
 
-# Checksumming with sha1sum etc. is a pain in RHEL7, as that version
-# of coreutils doesn't support --ignore-missing, so instead we filter
-# the CHECKSUMS-jruby file to contain only the version we have
-# downloaded.
-
-RUN \
-  set -x; set -u; set -e; \
-  cd ${LS_HOME}; \
-  cd /tmp; \
-  awk -v f="jruby-dist-${jruby_version}-bin.tar.gz" '$2 == f' < CHECKSUMS-jruby | tee /dev/stderr | sha1sum -c -
-
-# At this point, we need to have the plugin code point to the logstash-core jar that
-# was just produced.
-
-RUN \
+RUN --mount=type=cache,target=/cache/,uid=1000,gid=1000 \
+  set -xeu; \
+  tarball="/cache/jruby-dist-${jruby_version}-bin.tar.gz"; \
+  ls -ld /cache ; \
+  curl -s -o "${tarball}" \
+      https://repo1.maven.org/maven2/org/jruby/jruby-dist/${jruby_version}/jruby-dist-${jruby_version}-bin.tar.gz; \
+  cd /cache; \
+  sha1sum --ignore-missing --check /tmp/CHECKSUMS-jruby; \
   mkdir -p /opt/jruby; \
-  tar -C /opt/jruby -zxf /tmp/jruby-dist-${jruby_version}-bin.tar.gz --strip-components=1 --no-same-owner;
+  tar -C /opt/jruby -zxf /cache/jruby-dist-${jruby_version}-bin.tar.gz --strip-components=1 --no-same-owner
 
 # NOTE: I've found (same as https://github.com/elastic/logstash-devutils/issues/68)
 # that if logstash/bin is in the PATH before jruby/bin, then you'll get problems
@@ -132,20 +106,23 @@ ENV PATH=/opt/jruby/bin:/src/logstash/bin:/src/bin:${PATH}
 
 RUN jruby --version
 
-RUN gem install bundler rake
+RUN --mount=type=cache,target=/src/.gradle,uid=1000,gid=1000 \
+  gem install bundler rake
 
 # Now that we have 'rake' available, we need to bootstrap the logstash source
 # to provide ... jruby (a vendored version of it) and more besides.
 
-RUN cd ${LS_HOME}; cp Gemfile.jruby-2.5.lock.release Gemfile.lock
+RUN set -eu; cd ${LS_HOME}; cp Gemfile.jruby-2.5.lock.release Gemfile.lock
 
-RUN cd ${LS_HOME}; rake bootstrap
+RUN --mount=type=cache,target=/src/.gradle,uid=1000,gid=1000 \
+  set -eu; cd ${LS_HOME}; rake bootstrap
 
 # It would be useful to have the usual plugins available, as
 # they are not installed by default; they take ages to install too,
 # for some reason.
 
-RUN cd ${LS_HOME}; rake plugin:install-default
+RUN --mount=type=cache,target=/src/.gradle,uid=1000,gid=1000 \
+  cd ${LS_HOME}; rake plugin:install-default
 
 # When we compile a new plugin, we invoke 'bundle install' and it will go away
 # and pull down yet more stuff from the internet; which sucks if you're offline.
