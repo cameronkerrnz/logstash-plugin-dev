@@ -15,8 +15,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Build the Docker image
-      run: docker buildx build --platform linux/arm64,linux/amd64 --push -t cameronkerrnz/logstash-plugin-dev:${{ github.ref_name }} .
 
     # Get the repository's code
     - name: Checkout
