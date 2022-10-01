@@ -3,7 +3,7 @@ name: Build Multi-Arch Docker Image
 on:
   push:
     branches:
-    - "7.17"
+    - "7.13"
   pull_request:
     branches: []
 
