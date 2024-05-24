@@ -1,7 +1,11 @@
 IMAGE=cameronkerrnz/logstash-plugin-dev:7.17
 
 .PHONY: all
-all: image sbom grype
+all: freshen_base image sbom grype
+
+.PNONY: freshen_base
+freshen_base:
+	docker pull registry.access.redhat.com/ubi8/ubi:latest
 
 .PHONY: image
 image: Dockerfile
@@ -26,7 +30,7 @@ syft:
 		--output spdx-json=sbom/spdx.json \
 		--output cyclonedx-json=sbom/cyclonedx.json \
 		--output table=sbom/sbom.txt \
-		packages $(IMAGE)
+		scan $(IMAGE)
 
 .PHONY: grype
 grype: sbom/fixed-vulnerabilities.txt sbom/fixed-vulnerabilities.json sbom/fixed-vulnerabilities-with-path.txt
