@@ -5,10 +5,6 @@ Logstash plugin development container for (J)Ruby or Java plugins
 
 Docker Hub: cameronkerrnz/logstash-plugin-dev
 
-![Docker Cloud Automated build](https://img.shields.io/docker/cloud/automated/cameronkerrnz/logstash-plugin-dev)
-![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/cameronkerrnz/logstash-plugin-dev)
-![Docker Pulls](https://img.shields.io/docker/pulls/cameronkerrnz/logstash-plugin-dev)
-
 ---
 
 Developing a Logstash plugin is something that provides a lot of value,
