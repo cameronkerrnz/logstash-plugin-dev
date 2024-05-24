@@ -107,7 +107,7 @@ ENV PATH=/opt/jruby/bin:/src/logstash/bin:/src/bin:${PATH}
 RUN jruby --version
 
 RUN --mount=type=cache,target=/src/.gradle,uid=1000,gid=1000 \
-  gem install bundler rake
+  gem install bundler -v 2.3.27 && gem install rake
 
 # Now that we have 'rake' available, we need to bootstrap the logstash source
 # to provide ... jruby (a vendored version of it) and more besides.
