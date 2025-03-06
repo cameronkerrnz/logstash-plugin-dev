@@ -1,15 +1,10 @@
+# ARCHIVED
+
+I am not in a position to maintain this as frequently as I would have liked, and my logstash work required a lot of updating for Logstash 8, so I've made the decision to archive this project. It was last known to work with Logstash 7. If you would like to have a go at modernising it, you will need to be quite confident with Java (gradle), Ruby, and JRuby build tools.
+
 # logstash-plugin-dev
 Logstash plugin development container for (J)Ruby or Java plugins
 
----
-
-Docker Hub: cameronkerrnz/logstash-plugin-dev
-
-![Docker Cloud Automated build](https://img.shields.io/docker/cloud/automated/cameronkerrnz/logstash-plugin-dev)
-![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/cameronkerrnz/logstash-plugin-dev)
-![Docker Pulls](https://img.shields.io/docker/pulls/cameronkerrnz/logstash-plugin-dev)
-
----
 
 Developing a Logstash plugin is something that provides a lot of value,
 but the typical person in the community that would do so is not someone
